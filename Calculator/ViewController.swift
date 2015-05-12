@@ -36,6 +36,13 @@ class ViewController: UIViewController
         }
     }
     
+    @IBAction func signButton(sender: UIButton) {
+        
+        
+        
+    }
+    
+    
     @IBAction func clearButton(sender: UIButton) {
         
         history.text = " "
@@ -43,11 +50,28 @@ class ViewController: UIViewController
         
     }
     
+    @IBAction func backButton(sender: UIButton) {
+            
+        if userIsInTheMiddleOfTypingANumber && countElements(display.text!) > 1 {
+            display.text = dropLast(display.text!)
+        } else if userIsInTheMiddleOfTypingANumber && countElements(display.text!) == 1 {
+            display.text = "0"
+            userIsInTheMiddleOfTypingANumber = false
+        }
+        
+    }
+    
     @IBAction func operate(sender: UIButton) {
         let operation = sender.currentTitle!
         if userIsInTheMiddleOfTypingANumber {
-            enter()
+            switch operation {
+                case "±":
+                    changeSign()
+                    userIsInTheMiddleOfTypingANumber = true
+                default: enter()
+            }
         }
+        
         switch operation {
             case "×": performOperation { $0 * $1 }
             case "÷": performOperation { $1 / $0 }
@@ -59,8 +83,25 @@ class ViewController: UIViewController
             default: break
         }
         
-        history.text = " " + history.text! + " " + operation
+        if operation != "±" {
+            history.text = history.text! + "= " + operation
+        }
+    
     }
+    
+    
+    func changeSign() {
+        
+        let negativePrefix: String = "-"
+        
+        if display.text!.hasPrefix(negativePrefix) {
+            display.text!.removeAtIndex(display.text!.startIndex)
+        } else {
+            display.text = "-" + display.text!
+        }
+        
+    }
+    
 
     func performOperation(operation: (Double, Double) -> Double) {
         if operandStack.count >= 2 {
@@ -83,23 +124,29 @@ class ViewController: UIViewController
     @IBAction func enter() {
         
         userIsInTheMiddleOfTypingANumber = false
-        operandStack.append(displayValue)
-        history.text = " " + history.text! + " " + display.text!
-        println("operandStack = \(operandStack)")
+        if displayValue != nil {
+            operandStack.append(displayValue!)
+            history.text = history.text! + " " + display.text!
+            println("operandStack = \(operandStack)")
+        } else {
+            display.text = "0"
+        }
 
     }
     
-    var displayValue: Double {
+    var displayValue: Double? {
         get {
             switch display.text! {
                 case "π":
                     return pi
+                case "-π":
+                    return -1*pi
                 default:
                     return NSNumberFormatter().numberFromString(display.text!)!.doubleValue
             }
         }
         set {
-            display.text = "\(newValue)"
+            display.text = "\(newValue!)"
             userIsInTheMiddleOfTypingANumber = false
         }
     }

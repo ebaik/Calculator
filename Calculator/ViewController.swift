@@ -13,10 +13,11 @@ class ViewController: UIViewController
     @IBOutlet weak var display: UILabel!
     @IBOutlet weak var history: UILabel!
 
-    var operandStack = Array<Double>()
+//    var operandStack = Array<Double>()
     var userIsInTheMiddleOfTypingANumber = false
     let dotString = "."
-    let pi = M_PI
+    
+    var brain = CalculatorBrain()
 
     @IBAction func appendDigit(sender: UIButton) {
         
@@ -36,17 +37,34 @@ class ViewController: UIViewController
         }
     }
     
-    @IBAction func signButton(sender: UIButton) {
-        
-        
-        
+    @IBAction func createVariableButton(sender: UIButton) {
+
+        if let result = brain.pushOperand(sender.currentTitle!) {
+            displayValue = result
+            updateHistoryText()
+        } else {
+            displayValue = nil
+            updateHistoryText()
+        }
+
     }
     
     
+    @IBAction func setVariableButton(sender: UIButton) {
+        
+        if displayValue != nil {
+            brain.variableValues["M"] = displayValue
+            displayValue = brain.evaluateVariable()
+            userIsInTheMiddleOfTypingANumber = false
+        }
+    }
+    
     @IBAction func clearButton(sender: UIButton) {
         
-        history.text = " "
-        operandStack.removeAll()
+        history.text = "History: "
+        displayValue = nil
+        brain.clearCalculator()
+//        operandStack.removeAll()
         
     }
     
@@ -55,37 +73,63 @@ class ViewController: UIViewController
         if userIsInTheMiddleOfTypingANumber && countElements(display.text!) > 1 {
             display.text = dropLast(display.text!)
         } else if userIsInTheMiddleOfTypingANumber && countElements(display.text!) == 1 {
-            display.text = "0"
+            display.text = " "
             userIsInTheMiddleOfTypingANumber = false
         }
         
     }
     
     @IBAction func operate(sender: UIButton) {
+        
+//        if userIsInTheMiddleOfTypingANumber {
+//            enter()
+//        }
+//        
+//        if let operation = sender.currentTitle {
+//            if let result = brain.performOperation(operation) {
+//                displayValue = result
+//            } else {
+//                displayValue = 0
+//            }
+//            
+//        }
+        
+        
         let operation = sender.currentTitle!
         if userIsInTheMiddleOfTypingANumber {
             switch operation {
                 case "±":
                     changeSign()
                     userIsInTheMiddleOfTypingANumber = true
+                    println("changing sign")
                 default: enter()
             }
         }
-        
-        switch operation {
-            case "×": performOperation { $0 * $1 }
-            case "÷": performOperation { $1 / $0 }
-            case "+": performOperation { $0 + $1 }
-            case "−": performOperation { $1 - $0 }
-            case "√": performOperation { sqrt($0) }
-            case "sin": performOperation { sin($0) }
-            case "cos": performOperation { cos($0) }
-            default: break
-        }
-        
+
         if operation != "±" {
-            history.text = history.text! + "= " + operation
+            if let result = brain.performOperation(operation) {
+                displayValue = result
+//                operandStack.append(displayValue!)
+//                history.text = history.text! + " \(displayValue!)= " + operation
+                updateHistoryText()
+//                println("operandStack = \(operandStack)")
+            } else {
+                displayValue = nil
+                updateHistoryText()
+            }
         }
+        
+//        switch operation {
+//            case "×": performOperation { $0 * $1 }
+//            case "÷": performOperation { $1 / $0 }
+//            case "+": performOperation { $0 + $1 }
+//            case "−": performOperation { $1 - $0 }
+//            case "√": performOperation { sqrt($0) }
+//            case "sin": performOperation { sin($0) }
+//            case "cos": performOperation { cos($0) }
+//            default: break
+//        }
+        
     
     }
     
@@ -102,52 +146,84 @@ class ViewController: UIViewController
         
     }
     
-
-    func performOperation(operation: (Double, Double) -> Double) {
-        if operandStack.count >= 2 {
-            displayValue = operation(operandStack.removeLast(), operandStack.removeLast())
-            enter()
-        }
+    func updateHistoryText() {
+        history.text = brain.historyString + "="
     }
     
-    func performOperation(operation: Double -> Double) {
-        if operandStack.count >= 1 {
-            displayValue = operation(operandStack.removeLast())
-            enter()
-        }
-    }
+
+//    func performOperation(operation: (Double, Double) -> Double) {
+//        if operandStack.count >= 2 {
+//            displayValue = operation(operandStack.removeLast(), operandStack.removeLast())
+//            enter()
+//        }
+//    }
+//    
+//    func performOperation(operation: Double -> Double) {
+//        if operandStack.count >= 1 {
+//            displayValue = operation(operandStack.removeLast())
+//            enter()
+//        }
+//    }
     
     
 
     
     
     @IBAction func enter() {
-        
+
         userIsInTheMiddleOfTypingANumber = false
-        if displayValue != nil {
-            operandStack.append(displayValue!)
-            history.text = history.text! + " " + display.text!
-            println("operandStack = \(operandStack)")
-        } else {
-            display.text = "0"
+        
+        switch display.text! {
+            case "π":
+                brain.pushConstant("π")
+                updateHistoryText()
+//                operandStack.append(M_PI)
+//                history.text = history.text! + " " + display.text!
+//                println("operandStack = \(operandStack)")
+            case "-π":
+                brain.pushConstant("-π")
+                updateHistoryText()
+//                operandStack.append(-1*M_PI)
+//                history.text = history.text! + " " + display.text!
+//                println("operandStack = \(operandStack)")
+            default:
+                if displayValue != nil {
+                    if let result = brain.pushOperand(displayValue!) {
+                        displayValue = result
+                        updateHistoryText()
+//                        operandStack.append(displayValue!)
+//                        history.text = history.text! + " " + display.text!
+//                        println("operandStack = \(operandStack)")
+                        
+                    } else {
+                        displayValue = nil
+                    }
+                }
         }
+
+        
+//        userIsInTheMiddleOfTypingANumber = false
+//        if displayValue != nil {
+//            operandStack.append(displayValue!)
+//            history.text = history.text! + " " + display.text!
+//            println("operandStack = \(operandStack)")
+//        } else {
+//            display.text = "0"
+//        }
 
     }
     
     var displayValue: Double? {
         get {
-            switch display.text! {
-                case "π":
-                    return pi
-                case "-π":
-                    return -1*pi
-                default:
-                    return NSNumberFormatter().numberFromString(display.text!)!.doubleValue
-            }
+            return NSNumberFormatter().numberFromString(display.text!)?.doubleValue
         }
         set {
-            display.text = "\(newValue!)"
-            userIsInTheMiddleOfTypingANumber = false
+            if newValue != nil {
+                display.text = "\(newValue!)"
+            } else {
+                display.text = " "
+            }
+
         }
     }
     

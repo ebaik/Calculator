@@ -14,10 +14,9 @@ class CalculatorBrain {
     private var opStack = [Op]()
     private var knownOps = [String:Op]()
     private var constantValues = [String:Double]()
-    var variableValues = [String:Double]()
     private var descriptionStack = [String]()
-    private var indexDescription = 0
     var historyString = String()
+    var variableValues = [String:Double]()
     
     
     private enum Op: Printable
@@ -28,6 +27,22 @@ class CalculatorBrain {
         case UnaryOperation(String, Double -> Double)
         case BinaryOperation(String, (Double, Double) -> Double)
         
+        var precedence: Int {
+            get {
+                switch self {
+                case .Operand, .Variable, .Constant, .UnaryOperation:
+                    return 3
+                case .BinaryOperation(let symbol, _):
+                    if symbol == "×" || symbol == "÷" {
+                        return 2
+                    }
+                    else {
+                        return 1
+                    }
+                }
+            }
+        }
+        
         var description: String {
             get {
                 switch self {
@@ -37,12 +52,12 @@ class CalculatorBrain {
                     return variableString
                 case .Constant(let constantString):
                     switch constantString {
-                        case "π":
-                            return "π"
-                        case "-π":
-                            return "-π"
-                        default:
-                            return ""
+                    case "π":
+                        return "π"
+                    case "-π":
+                        return "-π"
+                    default:
+                        return ""
                     }
                 case .UnaryOperation(let symbol, _):
                     return symbol
@@ -51,6 +66,7 @@ class CalculatorBrain {
                 }
             }
         }
+        
     }
     
 
@@ -122,7 +138,7 @@ class CalculatorBrain {
 //        }
         println("\(opStack) = \(result) with \(remainder) left over")
         historyString = self.description
-        println("The description = " + historyString)
+//        println("The description = " + historyString)
         println("descriptionStack = \(descriptionStack)")
         return result
     }
@@ -182,43 +198,57 @@ class CalculatorBrain {
     
     var description: String {
         get {
+            
+            var op = opStack.last
             let (result, remainder) = brainContent(opStack)
+            var indexDescription = 0
+            
             // track results of operands and operators as complete strings
-            if descriptionStack.count == 0 {  // should always be an operand due to logic in performOperation function
-                descriptionStack.append(result!)
-            } else {
-                // identify that operand added to opStack
-                if remainder.count == opStack.count-1 {
-                    indexDescription = descriptionStack.count
-                    descriptionStack.insert(result!, atIndex: indexDescription)
+            if descriptionStack.count == 0 {
+                // should be an operand if result != nil
+                if result != nil {
+                    descriptionStack.append(result!)
                 }
-                // identify that unary operator added to opStack
-                else if remainder.count == opStack.count - 2 {                      indexDescription = descriptionStack.count - 1  // track index into descriptionStack array for where to place operation represented by string
-                    descriptionStack[indexDescription] = result!
-                }
-                // else if binary operator added to opStack
-                else {
-                    // if binary operation, need to replace the last two strings in the descriptionStack array
-                    var diff = 2
-                    // remove strings from descriptionStack and replace with string representing binary operations
-                    if descriptionStack.count == 1 {
-                        if result == nil {
-                            let opLast = opStack.removeLast()
-                            let descriptionLast = descriptionStack.removeLast()
-                            descriptionStack.append("(?" + opLast.description + descriptionLast + ")")
-                        } else {
+            }
+            else if descriptionStack.count == 1 {
+                if result == nil {  // if binary operation
+                    let opLast = opStack.removeLast()
+                    let descriptionLast = descriptionStack.removeLast()
+                    descriptionStack.append("(?" + opLast.description + descriptionLast + ")")
+                } else {
+                    // if operand, append new result
+                    switch op! {
+                        case .Operand, .Constant, .Variable:
+                            descriptionStack.append(result!)
+                        // if UnaryOperator
+                        default:
                             descriptionStack.removeLast()
                             descriptionStack.append(result!)
-                        }
-                    } else {
-                        for var i = 1; i <= diff; i++ {                        descriptionStack.removeLast()
-                        }
-                        descriptionStack.append(result!)
                     }
                 }
             }
-            // convert array to string with commas between array entry items
-            return ", ".join(descriptionStack.map( { $0 } ))
+            else {
+                switch op! {
+                    // identify that operand was added to opStack
+                    case .Operand, .Constant, .Variable:
+                        indexDescription = descriptionStack.count
+                        descriptionStack.insert(result!, atIndex: indexDescription)
+                    // identify that unary operator was added to opStack
+                    case .UnaryOperation:
+                        // replace last entry in descriptionStack
+                        indexDescription = descriptionStack.count - 1
+                        descriptionStack[indexDescription] = result!
+                    // if binary operation, need to replace the last two strings in the descriptionStack array
+                    default:
+                        var diff = 2
+                        // remove strings from descriptionStack and replace with string representing binary operations
+                        for var i = 1; i <= diff; i++ {                      descriptionStack.removeLast()
+                        }
+                        descriptionStack.append(result!)
+                }
+            }
+            // convert array of strings to string 
+            return ", ".join(descriptionStack)
         }
     }
     

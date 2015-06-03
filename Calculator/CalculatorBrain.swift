@@ -185,7 +185,28 @@ class CalculatorBrain {
                 if let operand1 = op1Evaluation.result {
                     let op2Evaluation = brainContent(op1Evaluation.remainingOps)
                     if let operand2 = op2Evaluation.result {
-                        returnString = "(" + operand2 + symbol + operand1 + ")"
+                        // if binary operation is multiplication/division
+                        if op.precedence == 2 {
+                            // if +/- present in operands, add appropriate parentheses
+                            var checkplus1 = operand1.componentsSeparatedByString("+").count
+                            var checkminus1 = operand1.componentsSeparatedByString("−").count
+                            var checkplus2 = operand2.componentsSeparatedByString("+").count
+                            var checkminus2 = operand2.componentsSeparatedByString("−").count
+                            var opWithParentheses1 = operand1
+                            var opWithParentheses2 = operand2
+                            println("operand1 \(operand1) has count \(checkplus1)")
+                            println("operand2 \(operand2) has count \(checkplus2)")
+                            if (checkplus1 > 1 || checkminus1 > 1) && !operand1.hasPrefix("(") {
+                                opWithParentheses1 = "(" + operand1 + ")"
+                            }
+                            if (checkplus2 > 1 || checkminus2 > 1) && !operand2.hasSuffix(")") {
+                                opWithParentheses2 = "(" + operand2 + ")"
+                            }
+                            returnString = opWithParentheses2 + symbol + opWithParentheses1
+                        }
+                        else {
+                            returnString = operand2 + symbol + operand1
+                        }
                         return (returnString, op2Evaluation.remainingOps)
                     }
                 }
@@ -242,7 +263,8 @@ class CalculatorBrain {
                     default:
                         var diff = 2
                         // remove strings from descriptionStack and replace with string representing binary operations
-                        for var i = 1; i <= diff; i++ {                      descriptionStack.removeLast()
+                        for var i = 1; i <= diff; i++ {
+                            descriptionStack.removeLast()
                         }
                         descriptionStack.append(result!)
                 }

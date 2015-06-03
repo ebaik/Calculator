@@ -194,8 +194,6 @@ class CalculatorBrain {
                             var checkminus2 = operand2.componentsSeparatedByString("−").count
                             var opWithParentheses1 = operand1
                             var opWithParentheses2 = operand2
-                            println("operand1 \(operand1) has count \(checkplus1)")
-                            println("operand2 \(operand2) has count \(checkplus2)")
                             if (checkplus1 > 1 || checkminus1 > 1) && !operand1.hasPrefix("(") {
                                 opWithParentheses1 = "(" + operand1 + ")"
                             }
